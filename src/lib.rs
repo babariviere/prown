@@ -3,3 +3,5 @@
 //! Maybe with the time, it will be a task automater
 //!
 //! WiP
+
+pub mod project;
