@@ -15,7 +15,7 @@ impl Project {
         let prown = if !prown_path.exists() {
             None
         } else {
-            Some(Prown::parse(&prown_path).unwrap())
+            Some(Prown::parse(&prown_path))
         };
         Project {
             dir: dir.as_ref().to_path_buf(),
@@ -26,7 +26,7 @@ impl Project {
     /// Init project with a prown file
     pub fn init<P: AsRef<Path>>(dir: P) -> Project {
         let prown_path = dir.as_ref().join(".prown.toml");
-        let prown = Prown::init(prown_path).unwrap();
+        let prown = Prown::init(prown_path);
         Project {
             dir: dir.as_ref().to_path_buf(),
             prown: Some(prown),

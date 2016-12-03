@@ -2,7 +2,7 @@ extern crate clap;
 extern crate prown;
 
 use clap::{App, Arg, SubCommand};
-use prown::command::*;
+use prown::project::Project;
 use std::env;
 use std::path::Path;
 
@@ -44,7 +44,7 @@ fn main() {
             } else {
                 current_dir
             };
-            init(&path).unwrap();
+            Project::init(path);
         }
         ("watch", Some(_arg)) => {}
         ("build", Some(_arg)) => {}
