@@ -47,6 +47,15 @@ impl Project {
     pub fn path(&self) -> &PathBuf {
         &self.dir
     }
+
+    /// Run the build command if there is a prown
+    pub fn build(&mut self) {
+        if self.prown.is_none() {
+            println!("There is no prown file, run `prown init` to create one.");
+            return;
+        }
+        self.prown.as_mut().unwrap().build();
+    }
 }
 
 #[cfg(test)]

@@ -47,9 +47,13 @@ fn main() {
             Project::init(path);
         }
         ("watch", Some(_arg)) => {}
-        ("build", Some(_arg)) => {}
+        ("build", Some(_arg)) => {
+            let mut project = Project::new(current_dir);
+            project.build();
+        }
         ("goto", Some(_arg)) => {}
-        _ => {
+        e => {
+            println!("{:?}", e);
             println!("You must run a subcommand.\nRun `prown --help` for more info.\n");
             println!("{}", app.usage());
             ::std::process::exit(1);

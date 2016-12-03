@@ -1,3 +1,4 @@
+build = ""
 # [name_of_module]
 # change = [ 'src/**', 'tests/*' ]
 # run = [ 'cargo build', 'cargo test' ]

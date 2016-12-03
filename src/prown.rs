@@ -3,13 +3,14 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
 use std::process::Command;
-use toml::{Parser, Value};
+use toml::{Parser, Table, Value};
 
 const DEFAULT_PROWN: &'static str = include_str!("../default.prown.toml");
 
 #[derive(Debug)]
 pub struct Prown {
     modules: Vec<Module>,
+    build: Option<Command>,
 }
 
 impl Prown {
@@ -24,7 +25,10 @@ impl Prown {
             println!("Prown file already exist: {}", path.display());
         }
 
-        Prown { modules: Vec::new() }
+        Prown {
+            modules: Vec::new(),
+            build: None,
+        }
     }
 
     /// Parse the .prown.toml file
@@ -32,29 +36,57 @@ impl Prown {
         let mut file = File::open(path).expect("Error when opening prown file");
         let mut buf = String::new();
         file.read_to_string(&mut buf).expect("Error when reading prown file");
-        let modules = parse_modules(&buf);
-        Prown { modules: modules }
+        parse_prown(&buf)
+    }
+
+    /// Run the build command
+    pub fn build(&mut self) {
+        if self.build.is_none() {
+            println!("There is no build command, add `build = \"<command>\" to the .prown.toml \
+                      file");
+            return;
+        }
+        let mut build = self.build.as_mut().unwrap();
+        build.spawn().unwrap().wait();
     }
 }
 
 /// Parse modules from a TOML file
-fn parse_modules(toml: &str) -> Vec<Module> {
+fn parse_prown(toml: &str) -> Prown {
     let mut modules = Vec::new();
+    let mut build = None;
     let values = Parser::new(toml).parse().unwrap();
-    for name in values {
-        let mut module = Module::new(name.0.clone());
-        let table = name.1.as_table().expect(&format!("{} is not a table", name.0));
-        for value in table {
-            let content = parse_content(value.1);
-            match value.0.as_str() {
-                "change" | "changes" => module.change(content),
-                "run" => module.run(content),
-                v => panic!("Command {} is not supported yet", v),
+
+    for value in values {
+        match value.1 {
+            Value::Table(ref t) => modules.push(parse_module(&value.0, t)),
+            Value::String(s) => {
+                if value.0 != "build" {
+                    panic!("Unknown param {}", value.0);
+                }
+                build = Some(parse_command(s));
             }
+            v => panic!("Unexpected {:?}", v),
         }
-        modules.push(module);
     }
-    Vec::new()
+    Prown {
+        modules: modules,
+        build: build,
+    }
+}
+
+/// Parse a single module
+fn parse_module(name: &str, table: &Table) -> Module {
+    let mut module = Module::new(name.clone());
+    for value in table {
+        let content = parse_content(value.1);
+        match value.0.as_str() {
+            "change" | "changes" => module.change(content),
+            "run" => module.run(content),
+            v => panic!("Command {} is not supported yet", v),
+        }
+    }
+    module
 }
 
 /// Parse content from a table
@@ -72,6 +104,16 @@ fn parse_content(value: &Value) -> Vec<String> {
         }
         ref v => panic!("Value {} is not supported", v),
     }
+}
+
+/// Parse a command from string
+fn parse_command(command: String) -> Command {
+    let mut splitted = command.split_whitespace();
+    let mut command = Command::new(splitted.next().unwrap_or_default());
+    for s in splitted {
+        command.arg(s);
+    }
+    command
 }
 
 #[derive(Debug)]
@@ -109,12 +151,7 @@ impl Module {
     pub fn run(&mut self, run: Vec<String>) {
         let mut commands = Vec::new();
         for r in run {
-            let mut splitted = r.split_whitespace();
-            let mut command = Command::new(splitted.next().unwrap_or_default());
-            for s in splitted {
-                command.arg(s);
-            }
-            commands.push(command);
+            commands.push(parse_command(r));
         }
         self.run = commands;
     }
