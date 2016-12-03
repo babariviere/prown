@@ -42,20 +42,16 @@ impl Project {
 #[cfg(test)]
 mod tests {
     use project::Project;
-    use std::path::Path;
 
     #[test]
     fn pr01() {
         let project = Project::new("tests/pr01");
         assert_eq!(project.has_prown(), false);
-        assert_eq!(project.prown(), None);
     }
 
     #[test]
     fn pr02() {
         let project = Project::new("tests/pr02");
         assert_eq!(project.has_prown(), true);
-        assert_eq!(project.prown(),
-                   Some(Path::new("tests/pr02/.prown.toml").to_path_buf()));
     }
 }

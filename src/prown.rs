@@ -6,6 +6,7 @@ use toml::{Parser, Value};
 
 const DEFAULT_PROWN: &'static str = include_str!("../default.prown.toml");
 
+#[derive(Debug)]
 pub struct Prown {
     modules: Vec<Module>,
 }
@@ -73,6 +74,7 @@ fn parse_modules(toml: &str) -> Vec<Module> {
     Vec::new()
 }
 
+#[derive(Debug)]
 struct Module {
     name: String,
     change: Vec<String>,
