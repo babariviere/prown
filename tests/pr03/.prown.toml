@@ -1,0 +1,7 @@
+[test-pr]
+change = 'tests/pr*'
+run = 'cargo test'
+
+[all]
+change = [ 'src/**', 'tests/**' ]
+run = [ 'cargo build', 'cargo test' ]
