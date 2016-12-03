@@ -6,5 +6,6 @@
 
 extern crate toml;
 
+pub mod command;
 pub mod project;
-pub mod prown;
+mod prown;

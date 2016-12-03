@@ -5,3 +5,4 @@ authors = ["notkild <notkild@gmail.com>"]
 
 [dependencies]
 toml = "0.2"
+clap = "2.19"

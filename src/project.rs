@@ -23,6 +23,16 @@ impl Project {
         }
     }
 
+    /// Init project with a prown file
+    pub fn init<P: AsRef<Path>>(dir: P) -> Project {
+        let prown_path = dir.as_ref().join(".prown.toml");
+        let prown = Prown::init(prown_path).unwrap();
+        Project {
+            dir: dir.as_ref().to_path_buf(),
+            prown: Some(prown),
+        }
+    }
+
     /// Check if the project has a prown config file
     pub fn has_prown(&self) -> bool {
         self.prown.is_some()
