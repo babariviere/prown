@@ -1,7 +1,9 @@
+use prown::Prown;
 use std::path::{Path, PathBuf};
 
 pub struct Project {
     dir: PathBuf,
+    prown: Option<Prown>,
 }
 
 impl Project {
@@ -9,23 +11,26 @@ impl Project {
     ///
     /// dir arg is the directory of the project
     pub fn new<P: AsRef<Path>>(dir: P) -> Project {
-        Project { dir: dir.as_ref().to_path_buf() }
+        let prown_path = dir.as_ref().join(".prown.toml");
+        let prown = if !prown_path.exists() {
+            None
+        } else {
+            Some(Prown::parse(&prown_path).unwrap())
+        };
+        Project {
+            dir: dir.as_ref().to_path_buf(),
+            prown: prown,
+        }
     }
 
     /// Check if the project has a prown config file
     pub fn has_prown(&self) -> bool {
-        // TODO maybe need to change path
-        let path = self.dir.join(".prown.toml");
-        path.exists()
+        self.prown.is_some()
     }
 
     /// Return the prown path if it exist
-    pub fn prown(&self) -> Option<PathBuf> {
-        let path = self.dir.join(".prown.toml");
-        if !self.has_prown() {
-            return None;
-        }
-        Some(path)
+    pub fn prown(&self) -> &Option<Prown> {
+        &self.prown
     }
 
     /// Return the dir of the project
