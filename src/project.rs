@@ -48,13 +48,13 @@ impl Project {
         &self.dir
     }
 
-    /// Run the build command if there is a prown
-    pub fn build(&mut self) {
+    /// Run command if there is a prown
+    pub fn run<S: AsRef<str>>(&mut self, command: S) -> Option<i32> {
         if self.prown.is_none() {
             println!("There is no prown file, run `prown init` to create one.");
-            return;
+            return None;
         }
-        self.prown.as_mut().unwrap().build();
+        self.prown.as_mut().unwrap().run(command)
     }
 }
 

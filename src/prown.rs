@@ -1,4 +1,5 @@
 use glob::Pattern;
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
@@ -10,7 +11,7 @@ const DEFAULT_PROWN: &'static str = include_str!("../default.prown.toml");
 #[derive(Debug)]
 pub struct Prown {
     modules: Vec<Module>,
-    build: Option<Command>,
+    commands: BTreeMap<String, Command>,
 }
 
 impl Prown {
@@ -27,7 +28,7 @@ impl Prown {
 
         Prown {
             modules: Vec::new(),
-            build: None,
+            commands: BTreeMap::new(),
         }
     }
 
@@ -40,39 +41,51 @@ impl Prown {
     }
 
     /// Run the build command
-    pub fn build(&mut self) {
-        if self.build.is_none() {
-            println!("There is no build command, add `build = \"<command>\" to the .prown.toml \
-                      file");
-            return;
+    pub fn run<S: AsRef<str>>(&mut self, command: S) -> Option<i32> {
+        let command = command.as_ref();
+        match self.commands.get_mut(command) {
+            Some(c) => {
+                let output = c.output().expect("Failed to execute command");
+                output.status.code()
+            }
+            None => {
+                println!("There is no {0} command, add `{0} = \"<command>\" to the .prown.toml \
+                          file in [commands]",
+                         command);
+                None
+            }
         }
-        let mut build = self.build.as_mut().unwrap();
-        build.spawn().unwrap().wait();
     }
 }
 
 /// Parse modules from a TOML file
 fn parse_prown(toml: &str) -> Prown {
     let mut modules = Vec::new();
-    let mut build = None;
+    let mut commands = BTreeMap::new();
     let values = Parser::new(toml).parse().unwrap();
 
     for value in values {
-        match value.1 {
-            Value::Table(ref t) => modules.push(parse_module(&value.0, t)),
-            Value::String(s) => {
-                if value.0 != "build" {
-                    panic!("Unknown param {}", value.0);
-                }
-                build = Some(parse_command(s));
-            }
-            v => panic!("Unexpected {:?}", v),
+        if (value.0 == "commands" || value.0 == "command") && commands.is_empty() {
+            commands = parse_commands(&value.1.as_table().unwrap());
+        } else {
+            modules.push(parse_module(&value.0, &value.1.as_table().unwrap()));
         }
     }
     Prown {
         modules: modules,
-        build: build,
+        commands: commands,
     }
+}
+
+/// Parse all commands specified by the user
+fn parse_commands(table: &Table) -> BTreeMap<String, Command> {
+    let mut tree = BTreeMap::new();
+    for value in table {
+        let string = value.1.as_str().unwrap();
+        let command = parse_command(string.to_string());
+        tree.insert(value.0.to_string(), command);
+    }
+    tree
 }
 
 /// Parse a single module
