@@ -1,3 +1,4 @@
+use error::*;
 use prown::Prown;
 use std::path::{Path, PathBuf};
 
@@ -7,30 +8,31 @@ pub struct Project {
 }
 
 impl Project {
-    /// Default constructor
-    ///
-    /// dir arg is the directory of the project
-    pub fn new<P: AsRef<Path>>(dir: P) -> Project {
-        let prown_path = dir.as_ref().join(".prown.toml");
-        let prown = if !prown_path.exists() {
-            None
-        } else {
-            Some(Prown::parse(&prown_path))
-        };
+    pub fn new(dir: PathBuf, prown: Option<Prown>) -> Project {
         Project {
-            dir: dir.as_ref().to_path_buf(),
+            dir: dir,
             prown: prown,
         }
     }
 
-    /// Init project with a prown file
-    pub fn init<P: AsRef<Path>>(dir: P) -> Project {
+    /// Open a project directory
+    ///
+    /// dir arg is the directory of the project
+    pub fn open<P: AsRef<Path>>(dir: P) -> Result<Project> {
         let prown_path = dir.as_ref().join(".prown.toml");
-        let prown = Prown::init(prown_path);
-        Project {
-            dir: dir.as_ref().to_path_buf(),
-            prown: Some(prown),
-        }
+        let prown = if !prown_path.exists() {
+            None
+        } else {
+            Some(Prown::parse(&prown_path)?)
+        };
+        Ok(Project::new(dir.as_ref().to_path_buf(), prown))
+    }
+
+    /// Init project with a prown file
+    pub fn init<P: AsRef<Path>>(dir: P) -> Result<Project> {
+        let prown_path = dir.as_ref().join(".prown.toml");
+        let prown = Prown::init(prown_path)?;
+        Ok(Project::new(dir.as_ref().to_path_buf(), Some(prown)))
     }
 
     /// Check if the project has a prown config file
@@ -49,21 +51,20 @@ impl Project {
     }
 
     /// Run command if there is a prown
-    pub fn run<S: AsRef<str>>(&mut self, command: S) -> Option<i32> {
+    pub fn run<S: AsRef<str>>(&mut self, command: S) -> Result<i32> {
         if self.prown.is_none() {
-            println!("There is no prown file, run `prown init` to create one.");
-            return None;
+            return Err(Error::MissingPrown(self.dir.clone()));
         }
         self.prown.as_mut().unwrap().run(command)
     }
 
     /// Watch file change
-    pub fn watch(&mut self) {
+    pub fn watch(&mut self) -> Result<()> {
         if self.prown.is_none() {
-            println!("There is no prown file, run `prown init` to create one.");
-            return;
+            return Err(Error::MissingPrown(self.dir.clone()));
         }
         self.prown.as_mut().unwrap().watch(self.dir.clone());
+        Ok(())
     }
 }
 

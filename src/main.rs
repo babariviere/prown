@@ -49,21 +49,23 @@ fn main() {
             } else {
                 current_dir
             };
-            Project::init(path);
+            Project::init(path).unwrap();
         }
         ("watch", Some(_arg)) => {
-            let mut project = Project::new(current_dir);
-            project.watch();
+            let mut project = Project::open(current_dir).unwrap();
+            project.watch().unwrap();
         }
         ("goto", Some(_arg)) => {}
         ("run", Some(arg)) => {
             let command = arg.value_of("command").unwrap();
-            let mut project = Project::new(current_dir);
+            let mut project = Project::open(current_dir).unwrap();
             println!("Running command {}", command);
             let status = project.run(&command);
             match status {
-                Some(s) => println!("Command {} exited with code", s),
-                None => {}
+                Ok(s) => println!("Command {} exited with code", s),
+                Err(e) => {
+                    println!("{:?}", e);
+                }
             }
         }
         _ => unreachable!(),

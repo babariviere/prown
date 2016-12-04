@@ -6,5 +6,7 @@ extern crate glob;
 extern crate notify;
 extern crate toml;
 
+mod error;
+mod parser;
 pub mod project;
 mod prown;
