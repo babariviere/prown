@@ -53,18 +53,27 @@ fn main() {
         }
         ("watch", Some(_arg)) => {
             let mut project = Project::open(current_dir).unwrap();
-            project.watch().unwrap();
+            let error = project.watch().err();
+            if error.is_some() {
+                println!("{}", error.unwrap());
+            }
         }
         ("goto", Some(_arg)) => {}
         ("run", Some(arg)) => {
             let command = arg.value_of("command").unwrap();
-            let mut project = Project::open(current_dir).unwrap();
+            let mut project = match Project::open(current_dir) {
+                Ok(p) => p,
+                Err(e) => {
+                    println!("{}", e);
+                    ::std::process::exit(1);
+                }
+            };
             println!("Running command {}", command);
             let status = project.run(&command);
             match status {
                 Ok(s) => println!("Command {} exited with code", s),
                 Err(e) => {
-                    println!("{:?}", e);
+                    println!("{}", e);
                 }
             }
         }
