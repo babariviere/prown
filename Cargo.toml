@@ -7,3 +7,4 @@ authors = ["notkild <notkild@gmail.com>"]
 toml = "0.2"
 clap = "2.19"
 glob = "0.2"
+notify = "3.0"

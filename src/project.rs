@@ -56,6 +56,15 @@ impl Project {
         }
         self.prown.as_mut().unwrap().run(command)
     }
+
+    /// Watch file change
+    pub fn watch(&mut self) {
+        if self.prown.is_none() {
+            println!("There is no prown file, run `prown init` to create one.");
+            return;
+        }
+        self.prown.as_mut().unwrap().watch(self.dir.clone());
+    }
 }
 
 #[cfg(test)]

@@ -1,9 +1,12 @@
 use glob::Pattern;
+use notify::{DebouncedEvent, Watcher, RecursiveMode, watcher};
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::mpsc::channel;
+use std::time::Duration;
 use toml::{Parser, Table, Value};
 
 const DEFAULT_PROWN: &'static str = include_str!("../default.prown.toml");
@@ -53,6 +56,38 @@ impl Prown {
                           file in [commands]",
                          command);
                 None
+            }
+        }
+    }
+
+    /// Watch all modules
+    pub fn watch(&mut self, path: PathBuf) {
+        let (tx, rx) = channel();
+        let mut watcher = watcher(tx, Duration::from_secs(10)).unwrap();
+
+        watcher.watch(path, RecursiveMode::Recursive).unwrap();
+        loop {
+            match rx.recv() {
+                Ok(event) => {
+                    match event {
+                        DebouncedEvent::Write(p) |
+                        DebouncedEvent::NoticeWrite(p) |
+                        DebouncedEvent::NoticeRemove(p) |
+                        DebouncedEvent::Create(p) => {
+                            for module in self.modules.iter_mut() {
+                                if module.match_change(&p) {
+                                    println!("File match for module {}", module.get_name());
+                                    module.run_commands();
+                                }
+                            }
+                        }
+                        e => {
+                            println!("Event {:?}", e);
+                        }
+                    }
+                }
+                Err(e) => panic!("Error {}", e),
+
             }
         }
     }
@@ -145,14 +180,21 @@ impl Module {
         }
     }
 
-    /// Set the change pattern to watch file
-    pub fn change(&mut self, change: Vec<String>) {
-        self.change = change.iter().map(|s| Pattern::new(s).unwrap()).collect()
+    /// Get the name of the module
+    pub fn get_name(&self) -> &str {
+        &self.name
     }
 
+    /// Set the change pattern to watch file
+    pub fn change(&mut self, change: Vec<String>) {
+        self.change = change.iter().map(|s| Pattern::new(&format!("**/{}", s)).unwrap()).collect()
+    }
+
+    /// On change check if file is in module
     pub fn match_change<P: AsRef<Path>>(&self, path: P) -> bool {
         let path_str = path.as_ref().to_str().unwrap();
         for pattern in &self.change {
+            println!("Matching {} with {}", pattern, path_str);
             if pattern.matches(path_str) {
                 return true;
             }
@@ -167,5 +209,12 @@ impl Module {
             commands.push(parse_command(r));
         }
         self.run = commands;
+    }
+
+    /// Run commands
+    pub fn run_commands(&mut self) {
+        for command in self.run.iter_mut() {
+            command.output().unwrap();
+        }
     }
 }

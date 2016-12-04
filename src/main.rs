@@ -51,7 +51,10 @@ fn main() {
             };
             Project::init(path);
         }
-        ("watch", Some(_arg)) => {}
+        ("watch", Some(_arg)) => {
+            let mut project = Project::new(current_dir);
+            project.watch();
+        }
         ("goto", Some(_arg)) => {}
         ("run", Some(arg)) => {
             let command = arg.value_of("command").unwrap();
