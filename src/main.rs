@@ -2,7 +2,7 @@ extern crate clap;
 extern crate prown;
 
 use clap::{App, AppSettings, Arg, SubCommand};
-use prown::project::Project;
+use prown::project::{Project, ProjectManager};
 use std::env;
 use std::path::Path;
 
@@ -49,7 +49,12 @@ fn main() {
             } else {
                 current_dir
             };
-            Project::init(path).unwrap();
+            let p = Project::init(path).unwrap();
+            let mut pm = match ProjectManager::load() {
+                Ok(pm) => pm,
+                Err(_) => ProjectManager::new(Vec::new()),
+            };
+            pm.add_project(p).unwrap();
         }
         ("watch", Some(_arg)) => {
             let mut project = Project::open(current_dir).unwrap();
@@ -58,7 +63,17 @@ fn main() {
                 println!("{}", error.unwrap());
             }
         }
-        ("goto", Some(_arg)) => {}
+        ("goto", Some(arg)) => {
+            let name = arg.value_of("name").unwrap();
+            let project_manager = match ProjectManager::load() {
+                Ok(pm) => pm,
+                Err(e) => {
+                    println!("{}", e);
+                    ::std::process::exit(1);
+                }
+            };
+            project_manager.goto(name).unwrap();
+        }
         ("run", Some(arg)) => {
             let command = arg.value_of("command").unwrap();
             let mut project = match Project::open(current_dir) {

@@ -58,7 +58,7 @@ impl Prown {
                 let output = c.output()?;
                 Ok(output.status.code().unwrap())
             }
-            None => Err(Error::MissingCommand(command.to_string(), self.path.clone())),
+            None => Err(PError::MissingCommand(command.to_string(), self.path.clone())),
         }
     }
 

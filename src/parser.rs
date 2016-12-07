@@ -14,7 +14,7 @@ pub fn parse_prown(toml: &str, path: PathBuf) -> Result<Prown> {
     for value in values {
         let value1 = match value.1.as_table() {
             Some(t) => t,
-            None => return Err(Error::NotATable(value.0.to_string())),
+            None => return Err(PError::NotATable(value.0.to_string())),
         };
         if (value.0 == "commands" || value.0 == "command") && commands.is_empty() {
             commands = parse_commands(&value1);
@@ -33,7 +33,7 @@ fn parse_module(name: &str, table: &Table) -> Result<Module> {
         match value.0.as_str() {
             "change" | "changes" => module.change(content)?,
             "run" => module.run(content),
-            v => return Err(Error::CommandNotImplemented(v.to_string())),
+            v => return Err(PError::CommandNotImplemented(v.to_string())),
         }
     }
     Ok(module)
